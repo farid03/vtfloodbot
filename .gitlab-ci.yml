@@ -1,0 +1,30 @@
+default:
+  image: mcr.microsoft.com/dotnet/sdk:8.0
+
+variables:
+  PROJECT_DIR: "./fp-lab4"
+  SOLUTION: "./fp-lab4.sln"
+
+stages:
+  - build # Сборка
+
+before_script:
+  - dotnet --version
+
+build-job:
+  stage: build
+  script:
+    - echo "INSTALL FORMATTER & LINTER"
+    - export PATH="$PATH:/root/.dotnet/tools"
+    - dotnet tool install -g fantomas
+    - dotnet tool install -g dotnet-fsharplint
+    - echo "FANTOMAS STARTED"
+    - fantomas --check $PROJECT_DIR
+    - echo "FSHARP LINT STARTED"
+    - dotnet restore $SOLUTION
+    - dotnet fsharplint lint $PROJECT_DIR
+    - echo "START BUILDING PROJECT"
+    - dotnet build
+    - echo "END BUILDING PROJECT"
+  artifacts:
+    untracked: true

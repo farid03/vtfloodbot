@@ -1,0 +1,47 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net8.0</TargetFramework>
+        <RootNamespace>fp_lab4</RootNamespace>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Content Include="..\.dockerignore">
+            <Link>.dockerignore</Link>
+        </Content>
+        <Content Include="Dockerfile"/>
+        <Compile Include="Configuration\Logger.fs" />
+        <Compile Include="Configuration\Configuration.fs" />
+        <Content Include="config.yaml">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
+        
+        <Compile Include="Model\Student.fs" />
+        
+        <Compile Include="Model\StudentEntity.fs" />
+        
+        <Compile Include="Model\TelegramInfoEntity.fs" />
+        <Compile Include="Service\UserParser.fs" />
+        <Compile Include="Storage\StudentsRepository.fs" />
+        <Compile Include="Storage\TelegramInfoRepository.fs" />
+        <Compile Include="Service\Processor.fs" />
+        <Compile Include="Service\Bot.fs" />
+
+        <Compile Include="Program.fs"/>
+
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="FSharp.Configuration" Version="2.0.0" />
+        <PackageReference Include="FsHttp" Version="14.4.1" />
+        <PackageReference Include="FSLogger" Version="5.1.0" />
+        <PackageReference Include="Funogram" Version="3.0.0" />
+        <PackageReference Include="Funogram.Telegram" Version="7.1.0" />
+        <PackageReference Update="FSharp.Core" Version="8.0.200" />
+        <PackageReference Include="Npgsql" Version="8.0.2" />
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.2" />
+    </ItemGroup>
+
+</Project>

@@ -1,0 +1,35 @@
+version: "3.7"
+
+services:
+  local-postgres:
+    image: postgres:14
+    container_name: local-postgres
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 2s
+      timeout: 2s
+      retries: 5
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - data:/var/lib/postgresql/data  
+  
+  application:
+    image: fp-lab4
+    container_name: application
+    depends_on: 
+      local-postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    profiles: [ "application" ]
+    volumes:
+      - ./config.yaml:/app/config.yaml
+
+volumes:
+  data: {}
