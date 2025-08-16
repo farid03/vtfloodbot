@@ -1,0 +1,39 @@
+name: Build and Lint
+
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Display .NET version
+        run: dotnet --version
+
+      - name: Install Fantomas (formatter)
+        run: dotnet tool install -g fantomas
+
+      - name: Install FSharpLint (linter)
+        run: dotnet tool install -g dotnet-fsharplint
+
+      - name: Check code formatting with Fantomas
+        run: fantomas --check ./fp-lab4
+
+      - name: Restore dependencies
+        run: dotnet restore ./fp-lab4.sln
+
+      - name: Run FSharpLint
+        run: dotnet fsharplint lint ./fp-lab4
+
+      - name: Build project
+        run: dotnet build ./fp-lab4.sln
