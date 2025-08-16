@@ -8,6 +8,7 @@ let config = AppConfig()
 
 let telegramBotToken = config.Bot.TelegramToken
 let chatId = config.Bot.ChatId
+let adminUserId = config.Bot.AdminUserId
 
 let myItmoUrl = config.Source.MyItmo.Url.OriginalString
 let myItmoBearerToken = config.Source.MyItmo.Bearer

@@ -11,13 +11,15 @@
         <Content Include="..\.dockerignore">
             <Link>.dockerignore</Link>
         </Content>
-        <Content Include="Dockerfile"/>
-        <Compile Include="Configuration\Logger.fs" />
+        <Content Include="Dockerfile" />
         <Compile Include="Configuration\Configuration.fs" />
         <Content Include="config.yaml">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </Content>
-        
+
+        <Compile Include="Logger\TelegramNotifier.fs" />
+        <Compile Include="Logger\Logger.fs" />
+
         <Compile Include="Model\Student.fs" />
         
         <Compile Include="Model\StudentEntity.fs" />
@@ -26,10 +28,11 @@
         <Compile Include="Service\UserParser.fs" />
         <Compile Include="Storage\StudentsRepository.fs" />
         <Compile Include="Storage\TelegramInfoRepository.fs" />
-        <Compile Include="Service\Processor.fs" />
+        <Compile Include="Service\EventProcessor.fs" />
         <Compile Include="Service\Bot.fs" />
+        <Compile Include="Service\DataProcessor.fs" />
 
-        <Compile Include="Program.fs"/>
+        <Compile Include="Program.fs" />
 
     </ItemGroup>
 
@@ -40,8 +43,8 @@
         <PackageReference Include="Funogram" Version="3.0.0" />
         <PackageReference Include="Funogram.Telegram" Version="7.1.0" />
         <PackageReference Update="FSharp.Core" Version="8.0.200" />
-        <PackageReference Include="Npgsql" Version="8.0.2" />
-        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.2" />
+        <PackageReference Include="Npgsql" Version="8.0.4" />
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.4" />
     </ItemGroup>
 
 </Project>

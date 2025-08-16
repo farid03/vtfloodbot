@@ -1,8 +1,8 @@
-module fp_lab4.TelegramInfoRepository
+module fp_lab4.Storage.TelegramInfoRepository
 
 open Microsoft.EntityFrameworkCore
-open Model.TelegramInfoEntity
-open Configuration.Configuration
+open fp_lab4.Model.TelegramInfoEntity
+open fp_lab4.Configuration.Configuration
 
 type public StudentDataContext() =
     inherit DbContext()
@@ -51,3 +51,13 @@ let update (tgEntity: TelegramInfoEntity) =
 let delete (tgEntity: TelegramInfoEntity) =
     ctx.TelegramInfo.Remove(tgEntity) |> ignore
     ctx.SaveChanges() |> ignore
+
+let deleteByTgUserId (tgUserId: int64) =
+    let entity = ctx.TelegramInfo.Find(tgUserId)
+
+    if entity <> null then
+        ctx.TelegramInfo.Remove(entity) |> ignore
+        ctx.SaveChanges() |> ignore
+        true
+    else
+        false

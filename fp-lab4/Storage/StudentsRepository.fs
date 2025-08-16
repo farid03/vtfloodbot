@@ -1,8 +1,8 @@
-module fp_lab4.StudentsRepository
+module fp_lab4.Storage.StudentsRepository
 
 open Microsoft.EntityFrameworkCore
-open Model.StudentEntity
-open Configuration.Configuration
+open fp_lab4.Model.StudentEntity
+open fp_lab4.Configuration.Configuration
 
 type public StudentDataContext() =
     inherit DbContext()
@@ -33,6 +33,17 @@ let contains (studentId: int) =
     |> Async.AwaitTask
     |> Async.RunSynchronously
 
-let save (student: StudentEntity) =
-    ctx.Student.Add(student) |> ignore
+let upsert (student: StudentEntity) =
+    if not (contains student.id) then
+        ctx.Student.Add(student) |> ignore
+    else
+        ctx.Student.Update(student) |> ignore
+
     ctx.SaveChanges() |> ignore
+
+let getCount () =
+    async {
+        let! count = ctx.Student.CountAsync() |> Async.AwaitTask
+        return count
+    }
+    |> Async.RunSynchronously

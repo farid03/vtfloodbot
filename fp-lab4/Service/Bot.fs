@@ -1,27 +1,28 @@
-module fp_lab4.Bot
+module fp_lab4.Service.Bot
 
 open System
 open Funogram.Api
 open Funogram.Telegram
 open Funogram.Telegram.Bot
-open Configuration.Logger
-open Configuration.Configuration
-open Processor
+open Microsoft.FSharp.Core
+open EventProcessor
+open fp_lab4.Logger.Logger
+open fp_lab4.Configuration
+open fp_lab4.Storage
 
-
-let replyToMessage (ctx: UpdateContext) (text: string) =
+let private replyToMessage (ctx: UpdateContext) (text: string) =
     Api.sendMessageReply ctx.Update.Message.Value.Chat.Id text ctx.Update.Message.Value.MessageId
     |> api ctx.Config
     |> Async.Ignore
     |> Async.Start
 
-let handleHelp (ctx: UpdateContext) =
+let private handleHelp (ctx: UpdateContext) =
     let username = ctx.Update.Message.Value.From.Value.Username
     logDbg $"Help command from {username} received"
 
     replyToMessage ctx "/start - приветствие\n/help - список команд\n/isu <isu_id> - получить доступ к чату"
 
-let handleStart (ctx: UpdateContext) =
+let private handleStart (ctx: UpdateContext) =
     let username = ctx.Update.Message.Value.From.Value.Username
     logDbg $"Start command from {username} received"
 
@@ -29,53 +30,83 @@ let handleStart (ctx: UpdateContext) =
         ctx
         "Этот бот поможет получить доступ в секретный чат студентов.\nВведите /isu <ваш_ИСУ> для получения ссылки на вступление в чат."
 
-let createInviteLink (ctx: UpdateContext) =
-    let invite =
-        Req.CreateChatInviteLink.Make(
-            chatId = chatId,
-            expireDate = DateTimeOffset.Now.AddMinutes(120).ToUnixTimeSeconds(),
-            name = ctx.Update.Message.Value.From.Value.Username.Value,
-            createsJoinRequest = true
-        )
-        |> api ctx.Config
-        |> Async.RunSynchronously
+let private createInviteLink (ctx: UpdateContext) =
+    let username =
+        match ctx.Update.Message with
+        | Some message when message.From.IsSome && message.From.Value.Username.IsSome ->
+            message.From.Value.Username.Value
+        | _ -> "Unknown User"
 
-    (Result.toOption invite).Value.InviteLink
+    try
+        let invite =
+            Req.CreateChatInviteLink.Make(
+                chatId = Configuration.chatId,
+                expireDate = DateTimeOffset.Now.AddMinutes(120).ToUnixTimeSeconds(),
+                name = username,
+                createsJoinRequest = true
+            )
+            |> api ctx.Config
+            |> Async.RunSynchronously
 
+        match Result.toOption invite with
+        | Some inviteResult -> inviteResult.InviteLink
+        | None ->
+            logErr "Failed to create invite link - API returned error"
+            ""
+    with ex ->
+        logErr $"Exception creating invite link: {ex.Message}"
+        ""
 
-let handleIsu (ctx: UpdateContext) (studentId: int) =
+let private handleIsu (ctx: UpdateContext) (studentId: int) =
     let user = StudentsRepository.getById studentId
-    let username = ctx.Update.Message.Value.From.Value.Username
 
-    match user with
-    | null ->
-        logDbg $"User {username} trying to register with invalid studentId: {studentId}"
-        replyToMessage ctx "Пользователь не найден!"
+    match ctx.Update.Message with
+    | Some message when message.From.IsSome ->
+        let from = message.From.Value
+        let usernameOpt = from.Username
+        let tgUserId = from.Id
+
+        match user with
+        | null ->
+            logInfo $"User {usernameOpt} trying to register with invalid studentId: {studentId}"
+            replyToMessage ctx "Студент не найден!"
+        | _ ->
+            let tgUserExists, studentExists = processInvite tgUserId studentId usernameOpt
+
+            if not (tgUserExists || studentExists) then
+                let inviteLink = createInviteLink ctx
+
+                if inviteLink <> "" then
+                    logInfo $"User {usernameOpt} valid, invite link created for student {studentId}"
+                    replyToMessage ctx $"Ссылка для вступления: {inviteLink}.\nСсылка действительна 2 часа."
+                else
+                    rollbackInvite tgUserId studentId usernameOpt |> ignore
+                    logErr "Failed to create invite link for valid user"
+                    replyToMessage ctx "Ошибка создания ссылки приглашения! Обратитесь к администратору."
+            elif studentExists then
+                logInfo $"Student {studentId} already registered in chat"
+                replyToMessage ctx "Студент уже зарегистрирован в чате!"
+            elif tgUserExists then
+                logInfo $"User {usernameOpt} already registered in chat"
+                replyToMessage ctx "Вы уже зарегистрированы в чате!"
+            else
+                logErr $"Invalid user registration state: username:{usernameOpt} studentId:{studentId}"
+                replyToMessage ctx "Ошибка регистрации! Обратитесь к администратору."
     | _ ->
-        let tgUserId = ctx.Update.Message.Value.From.Value.Id
+        logErr "Cannot process ISU command: no message or user data in update"
+        replyToMessage ctx "Ошибка обработки команды!"
 
-        let result = processInvite tgUserId studentId username
-
-        match result with
-        | true ->
-            let inviteLink = createInviteLink ctx
-            logDbg $"User {username} valid, invite link created"
-            replyToMessage ctx $"Ссылка для вступления: {inviteLink}.\nСсылка действительна 2 часа."
-        | false ->
-            logDbg $"User {username} already registered in chat"
-            replyToMessage ctx "Пользователь уже зарегистрирован в чате!"
-
-let handleLeaveChat (ctx: UpdateContext) =
+let private handleLeaveChat (ctx: UpdateContext) =
     match ctx.Update.Message with
     | Some { LeftChatMember = leftChatMember } ->
-        logDbg $"Leave from user with username:{leftChatMember.Value.Username}, uid:{leftChatMember.Value.Id}"
+        logInfo $"Leave from user with username:{leftChatMember.Value.Username}, uid:{leftChatMember.Value.Id}"
         processLeave leftChatMember.Value.Id
     | None -> logErr $"Error: no message in update {ctx.Update}"
 
-let handleJoinChat (ctx: UpdateContext) =
+let private handleJoinChat (ctx: UpdateContext) =
     match ctx.Update.ChatJoinRequest with
     | Some { From = from } ->
-        logDbg $"Join request from user with username: {from.Username}, uid:{from.Id}"
+        logInfo $"Join request from user with username: {from.Username}, uid:{from.Id}"
         let approve = processJoinRequest from.Id
 
         if approve then
@@ -84,9 +115,9 @@ let handleJoinChat (ctx: UpdateContext) =
                 |> api ctx.Config
                 |> Async.RunSynchronously
 
-            logDbg $"Join request has been approved: {approve}, result: {Result.toOption result}"
+            logInfo $"Join request from {from.Username} has been approved: {approve}, result: {Result.toOption result}"
         else
-            logDbg "Join request was not approved"
+            logInfo $"Join request from {from.Username} was not approved"
 
     | None -> logErr $"Error: no message in update {ctx.Update}"
 

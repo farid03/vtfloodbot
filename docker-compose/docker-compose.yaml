@@ -1,9 +1,9 @@
 version: "3.7"
 
 services:
-  local-postgres:
-    image: postgres:14
-    container_name: local-postgres
+  vtflood-postgres:
+    image: postgres:16
+    container_name: vtflood-postgres
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 2s

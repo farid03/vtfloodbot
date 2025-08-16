@@ -1,24 +1,24 @@
-module fp_lab4.Service
+module fp_lab4.Service.UserParser
 
 open System.Text.Json
 open FsHttp
-open Configuration.Configuration
-open Configuration.Logger
-open Model.Student
+open fp_lab4.Configuration
+open fp_lab4.Logger.Logger
+open fp_lab4.Model.Student
 
-let requestGroup group limit =
+let private requestGroup group limit offset =
     http {
-        GET myItmoUrl
-        query [ "limit", limit.ToString(); "offset", "0"; "q", group ]
+        GET Configuration.myItmoUrl
+        query [ "limit", limit.ToString(); "offset", offset.ToString(); "q", group ]
 
-        AuthorizationBearer myItmoBearerToken
+        AuthorizationBearer Configuration.myItmoBearerToken
 
         header "accept-language" "ru"
     }
     |> Request.send
     |> Response.toJson
 
-let toStudent (json: JsonElement) =
+let private toStudent (json: JsonElement) =
     let student =
         { id = json.GetProperty("id").GetInt32()
           fio = json.GetProperty("fio").GetString()
@@ -30,17 +30,29 @@ let toStudent (json: JsonElement) =
 
     student
 
-let getGroupStudents group limit =
-    logInfo $"Getting students with limit={limit} for group: {group}"
-    let groupRequest = requestGroup group limit
+let private getGroupStudents group limit =
+    logInfo $"Getting students with limit={limit} for groupPattern: {group}"
 
-    if (groupRequest.GetProperty("error_code").GetInt32() <> 0) then
-        failwith (groupRequest.GetProperty("error_message").GetString())
+    let rec fetchStudentsRecursively offset accumulatedStudents =
+        let groupRequest = requestGroup group limit offset
 
-    let studentsJson = groupRequest.GetProperty("result").GetProperty("data").GetList()
+        if (groupRequest.GetProperty("error_code").GetInt32() <> 0) then
+            let errorMessage = groupRequest.GetProperty("error_message").GetString()
+            logFatal errorMessage
+            []
+        else
+            let studentsJson = groupRequest.GetProperty("result").GetProperty("data").GetList()
 
-    let students = studentsJson |> List.map toStudent
-    logDbg $"{group} students count: {students.Length}"
+            if studentsJson.Length = 0 then
+                accumulatedStudents
+            else
+                let newStudents = studentsJson |> List.map toStudent
+                let updatedStudents = accumulatedStudents @ newStudents
+                fetchStudentsRecursively (offset + studentsJson.Length) updatedStudents
+
+    let students = fetchStudentsRecursively 0 []
+
+    logInfo $"{group} students count: {students.Length}"
 
     students
 
@@ -48,11 +60,11 @@ let getAllStudents =
     logInfo "Getting all students"
 
     let students =
-        groups
-        |> Seq.map (fun group -> getGroupStudents group groupLimit)
+        Configuration.groups
+        |> Seq.map (fun group -> getGroupStudents group Configuration.groupLimit)
         |> Seq.collect id
         |> Seq.toList
 
-    logDbg $"Students count: {students.Length}"
+    logInfo $"All students count: {students.Length}"
 
     students

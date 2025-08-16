@@ -1,30 +1,8 @@
-module fp_lab4.Processor
+module fp_lab4.Service.EventProcessor
 
-open Model.StudentEntity
-open Service
-open Configuration.Configuration
-open Configuration.Logger
-open Model.TelegramInfoEntity
-
-let saveGroupOfStudents (group: string, students: Model.Student.Student list) =
-    logDbg $"Start saving group {group}"
-
-    let addGroup (entity: StudentEntity) =
-        entity.group <- group
-        entity
-
-    students
-    |> List.map (fun student -> StudentEntity(student) |> addGroup)
-    |> List.iter StudentsRepository.save
-
-    logDbg $"Saved group {group}, students count: {students.Length}"
-
-let saveAllStudents =
-    logInfo "Start saving all students"
-
-    groups
-    |> Seq.iter (fun group -> (group, (getGroupStudents group groupLimit)) |> saveGroupOfStudents)
-
+open fp_lab4.Logger.Logger
+open fp_lab4.Model.TelegramInfoEntity
+open fp_lab4.Storage
 
 let processInvite (tgUserId: int64) (studentId: int) (username: string option) =
     let tgUserExists = TelegramInfoRepository.existsTgUserId tgUserId
@@ -38,7 +16,11 @@ let processInvite (tgUserId: int64) (studentId: int) (username: string option) =
         let tgInfo = TelegramInfoEntity(studentId, tgUserId, usernameValue, false)
         TelegramInfoRepository.save tgInfo
 
-    not (tgUserExists || studentExists) // возможно стоит возвращать оба значения и менять сообщение в зависимости от результата
+    tgUserExists, studentExists
+
+let rollbackInvite (tgUserId: int64) (studentId: int) (username: string option) : bool =
+    logErr $"Rollback processed invite for tgUserId:{tgUserId}, studentId:{studentId}, username:{username}"
+    TelegramInfoRepository.deleteByTgUserId tgUserId
 
 let processJoinRequest (tgUserId: int64) =
     let tgInfo = TelegramInfoRepository.getById tgUserId

@@ -1,94 +1,37 @@
 Bot:
-  TelegramToken: "<telegram bot token>"
-  ChatId: -4116445966
+  TelegramToken: "TELEGRAM_BOT_TOKEN"
+  ChatId: CHAT_ID
+  AdminUserId: ADMIN_USER_ID
 
 mail:
   Host: "smtp.gmail.com"
   Port: 587
-  From: ""
-  Password: ""
+  From: "MAIL_USERNAME"
+  Password: "MAIL_PASSWORD"
   UsersMailDomain: [
     "niuitmo.ru",
     "edu.itmo.ru",
   ]
 
 DB:
-  ConnectionString: "Server=127.0.0.1;Port=5432;Database=postgres;User Id=postgres;Password=postgres;"
+  ConnectionString: "CONNECTION_STRING"
   NumberOfDeadlockRepeats: 5
   DefaultTimeout: 00:05:00
 
 Source:
   MyItmo:
     Url: "https://my.itmo.ru/api/personalities/persons"
-    Bearer: "<bearer token>"
-  
-  Start: false
-  EachLimit: 1000
+    Bearer: "MYT_BEARER_TOKEN"
+  Start: true
+  EachLimit: 10000
   Groups: [
-    # 1
-    P3106,
-    P3107,
-    P3108,
-    P3109,
-    P3110,
-    P3111,
-    P3112,
-    P3113,
-    P3114,
-    P3115,
-    P3116,
-    P3117,
-    P3118,
-    P3119,
-    P3130,
-    P3131,
-    P3132,
-    
-    # 2
-    P3206,
-    P3207,
-    P3208,
-    P3209,
-    P3210,
-    P3211,
-    P3212,
-    P3213,
-    P3214,
-    P3215,
-    P3216,
-    P3217,
-    P3218,
-    P3219,
-    P3230,
-    P3231,
-    P3232,
-    P3233,
-    P3234,
-    
-    # 3
-    P33081,
-    P33091,
-    P33092,
-    P33101,
-    P33102,
-    P33111,
-    P33112,
-    P33131,
-    P33141,
-    P33151,
-    P33301,
-    P33302,
-    P33311,
-    P33312,
-    
-    # 4
-    P34101,
-    P34102,
-    P34111,
-    P34121,
-    P34131,
-    P34301,
-    P34302,
-    P34312,
+    # 1 course pattern
+    P31,    
+    # 2 course pattern
+    P32,
+    # 3 course pattern
+    P33,
+    # 4 course pattern
+    P34,
   ]
   
