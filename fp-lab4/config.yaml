@@ -14,14 +14,14 @@ mail:
   ]
 
 DB:
-  ConnectionString: "CONNECTION_STRING"
+  ConnectionString: "DB_CONNECTION_STRING"
   NumberOfDeadlockRepeats: 5
   DefaultTimeout: 00:05:00
 
 Source:
   MyItmo:
     Url: "https://my.itmo.ru/api/personalities/persons"
-    Bearer: "MYT_BEARER_TOKEN"
+    Bearer: "MY_ITMO_BEARER_TOKEN"
   Start: true
   EachLimit: 10000
   Groups: [

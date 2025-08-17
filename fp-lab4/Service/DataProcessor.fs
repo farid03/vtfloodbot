@@ -18,7 +18,7 @@ let private saveGroupOfStudents (students: Model.Student.Student list) =
     |> List.map (fun student -> StudentEntity(student) |> addGroup)
     |> List.iter StudentsRepository.upsert
 
-    logInfo $"Students saved: Actual count: {StudentsRepository.getCount ()}"
+    logInfo $"Students saved. Actual count: {StudentsRepository.getCount ()}"
 
 let saveAllStudents =
     logInfo "Start saving all students"
